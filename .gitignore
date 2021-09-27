@@ -1,4 +1,4 @@
 build/*
 dist/*
-mpiutls.egg-info/*
+*egg*
 *.DS_STORE
