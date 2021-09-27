@@ -1,0 +1,4 @@
+build/*
+dist/*
+mpiutls.egg-info/*
+*.DS_STORE

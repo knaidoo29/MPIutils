@@ -1,0 +1,25 @@
+Metadata-Version: 2.1
+Name: mpiutils
+Version: 0.0.0
+Summary: mpi4py utility functions.
+Home-page: https://github.com/knaidoo29/mpiutils
+Author: Krishna Naidoo
+Author-email: krishna.naidoo.11@ucl.ac.uk
+License: MIT
+Description: # MPIutils
+        
+        mpi4py utility functions for python.
+        
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: Natural Language :: English
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python
+Classifier: Topic :: Scientific/Engineering
+Classifier: Topic :: Scientific/Engineering :: Astronomy
+Classifier: Topic :: Scientific/Engineering :: Mathematics
+Classifier: Topic :: Scientific/Engineering :: Simulation
+Requires-Python: >=3
+Description-Content-Type: text/markdown
