@@ -94,6 +94,27 @@ class MPI:
         data = self.comm.recv(source=source, tag=tag)
         return data
 
+    
+    def collect(self, data):
+        """Collects a distributed data to the processor with rank=0
+
+        Parameters
+        ----------
+        data : array
+            distributed data set.
+        """
+        if self.rank == 0:
+            datas = [data]
+            for i in range(1, self.size):
+                _data = self.recv(i, tag=10+i)
+                datas.append(_data)
+            data = np.concatenate(datas)
+        else:
+            self.send(data, to_rank=0, tag=10+self.rank)
+            data = None
+        self.wait()
+        return data
+
 
     def end(self):
         """Ends MPI environment."""
