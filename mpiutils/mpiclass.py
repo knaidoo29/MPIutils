@@ -36,6 +36,19 @@ class MPI:
         self.loop_size = None
 
 
+    def split(self, length):
+        """For splitting an array across nodes."""
+        split_length = int(np.floor(length / self.size))
+        splits = np.zeros(self.size+1, dtype='int')
+        splits[1:] = split_length
+        remainder = length - split_length*self.size
+        splits[1:remainder] += 1
+        splits = np.cumsum(splits)
+        split1 = splits[:-1]
+        split2 = splits[1:]
+        return split1, split2
+
+
     def mpi_print(self, string):
         """Prints out a string using flush so it prints out immediately in an MPI
         setting."""
@@ -79,6 +92,7 @@ class MPI:
         """
         data = self.comm.recv(source=source, tag=tag)
         return data
+
 
     def end(self):
         """Ends MPI environment."""
