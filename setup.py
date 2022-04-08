@@ -9,7 +9,7 @@ with open(path.join(this_directory, 'README.md')) as f:
     long_description = f.read()
 
 setup(name = 'mpiutils',
-      version = '0.0.0',
+      version = '0.0.1',
       description       = "mpi4py utility functions.",
       long_description  = long_description,
       long_description_content_type = 'text/markdown',

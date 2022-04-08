@@ -39,21 +39,52 @@ class MPI:
 
     def split(self, length):
         """For splitting an array across nodes."""
-        split_length = int(np.floor(length / self.size))
+        split_equal = length/self.size
+        split_floor = np.floor(split_equal)
+        split_remain = split_equal - split_floor
+        counts = split_floor*np.ones(self.size)
+        counts[:int(np.round(split_remain*self.size, decimals=0))] += 1
+        counts = counts.astype('int')
         splits = np.zeros(self.size+1, dtype='int')
-        splits[1:] = split_length
-        remainder = length - split_length*self.size
-        splits[1:remainder] += 1
-        splits = np.cumsum(splits)
+        splits[1:] = np.cumsum(counts)
         split1 = splits[:-1]
         split2 = splits[1:]
         return split1, split2
 
 
-    def mpi_print(self, string):
-        """Prints out a string using flush so it prints out immediately in an MPI
+    def split_array(self, array):
+        """Returns the values of the split array."""
+        split1, split2 = self.split(len(array))
+        return array[split1[self.rank]:split2[self.rank]]
+
+
+    def check_partition(self, NDshape, NDshape_split):
+        """Returns bool array showing which axes the array is being split."""
+        return np.array([NDshape[i] == NDshape_split[i] for i in range(len(NDshape))])
+
+
+    def create_split_ndarray(self, arrays_nd, whichaxis):
+        """Split a list of arrays based on the data partitioning scheme."""
+        split_arrays = []
+        for i in range(0, len(arrays_nd)):
+            _array = arrays_nd[i]
+            if which_axis[i] is False:
+                _array = self.split_array(_array)
+            split_arrays.append(_array)
+        return split_arrays
+
+
+    def create_split_ndgrid(self, arrays_nd, whichaxis):
+        """Create a partitioned gridded data set."""
+        split_arrays = self.create_split_ndarray(arrays_nd, whichaxis)
+        split_grid = np.meshgrid(*split_arrays, indexing='ij')
+        return split_grid
+
+
+    def mpi_print(self, *value):
+        """Prints out using flush so it prints out immediately in an MPI
         setting."""
-        print(string, flush=True)
+        print(*value, flush=True)
 
 
     def send(self, data, to_rank=None, tag=11):
