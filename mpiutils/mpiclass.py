@@ -68,9 +68,11 @@ class MPI:
         split_arrays = []
         for i in range(0, len(arrays_nd)):
             _array = arrays_nd[i]
-            if which_axis[i] is False:
+            if not whichaxis[i]:
                 _array = self.split_array(_array)
-            split_arrays.append(_array)
+                split_arrays.append(_array)
+            else:
+                split_arrays.append(_array)
         return split_arrays
 
 
