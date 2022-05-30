@@ -16,6 +16,22 @@ class MPI:
         self.mpi_info = 'Proc ' + str(self.rank+1)+' of ' + str(self.size)
 
 
+    def mpi_fft_start(Ngrids):
+        """Returns mpi4py-fft FFT object."""
+        from mpi4py_fft import PFFT, newDistArray
+        if len(Ngrids) == 2:
+            FFT = PFFT(self.comm, Ngrids, axes=(0, 1), dtype=complex, grid=(-1,), transform='fftn')
+        elif len(Ngrids) == 3:
+            FFT = PFFT(self.comm, Ngrids, axes=(0, 1, 2), dtype=complex, grid=(-1,), transform='fftn')
+        return FFT
+
+
+    def mpi_fft_array(FFT):
+        """Returns mpi4py-fft distributed array."""
+        f = newDistArray(FFT, False)
+        return f
+
+
     def wait(self):
         """Makes all jobs wait so they are synchronised."""
         self.comm.Barrier()
