@@ -16,9 +16,9 @@ class MPI:
         self.mpi_info = 'Proc ' + str(self.rank+1)+' of ' + str(self.size)
 
 
-    def mpi_fft_start(Ngrids):
+    def mpi_fft_start(self, Ngrids):
         """Returns mpi4py-fft FFT object."""
-        from mpi4py_fft import PFFT, newDistArray
+        from mpi4py_fft import PFFT
         if len(Ngrids) == 2:
             FFT = PFFT(self.comm, Ngrids, axes=(0, 1), dtype=complex, grid=(-1,), transform='fftn')
         elif len(Ngrids) == 3:
@@ -26,8 +26,9 @@ class MPI:
         return FFT
 
 
-    def mpi_fft_array(FFT):
+    def mpi_fft_array(self, FFT):
         """Returns mpi4py-fft distributed array."""
+        from mpi4py_fft import newDistArray
         f = newDistArray(FFT, False)
         return f
 
@@ -125,12 +126,12 @@ class MPI:
                     self.comm.send(data, dest=i, tag=tag)
 
 
-    def recv(self, source, tag=11):
+    def recv(self, from_rank, tag=11):
         """Receive data from another node.
 
         Parameters
         ----------
-        source : int
+        from_rank : int
             Source of the data.
         tag : int
             Sending tag to ensure the right data is being transfered.
@@ -140,7 +141,37 @@ class MPI:
         data : array
             Data received.
         """
-        data = self.comm.recv(source=source, tag=tag)
+        data = self.comm.recv(source=from_rank, tag=tag)
+        return data
+
+
+    def send_up(self, data):
+        """Send data from each node to the node above."""
+        if self.rank < self.size-1:
+            self.send(data, to_rank=self.rank+1, tag=10+self.rank)
+        else:
+            self.send(data, to_rank=0, tag=10+self.size)
+        self.wait
+        if self.rank > 0:
+            data = self.recv(self.rank-1, tag=10+self.rank-1)
+        else:
+            data = self.recv(self.size-1, tag=10+self.size)
+        self.wait()
+        return data
+
+
+    def send_down(self, data):
+        """Send data from each node to the node below."""
+        if self.rank > 0:
+            self.send(data, to_rank=self.rank-1, tag=10+self.rank)
+        else:
+            self.send(data, to_rank=self.size-1, tag=10+self.size)
+        self.wait()
+        if self.rank < self.size-1:
+            data = self.recv(self.rank+1, tag=10+self.rank+1)
+        else:
+            data = self.recv(0, tag=10+self.size)
+        self.wait()
         return data
 
 
