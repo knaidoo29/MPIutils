@@ -146,36 +146,38 @@ class MPI:
 
 
     def send_up(self, data):
+        datain = np.copy(data)
         """Send data from each node to the node above."""
         if self.rank < self.size-1:
-            self.send(data, to_rank=self.rank+1, tag=10+self.rank)
-        else:
-            self.send(data, to_rank=0, tag=10+self.size)
-        self.wait
+            self.send(datain, to_rank=self.rank+1, tag=10+self.rank)
         if self.rank > 0:
-            data = self.recv(self.rank-1, tag=10+self.rank-1)
-        else:
-            data = self.recv(self.size-1, tag=10+self.size)
+            dataout = self.recv(self.rank-1, tag=10+self.rank-1)
+        self.wait
+        if self.rank == self.size-1:
+            self.send(datain, to_rank=0, tag=10+self.size)
+        if self.rank == 0:
+            dataout = self.recv(self.size-1, tag=10+self.size)
         self.wait()
-        return data
+        return dataout
 
 
     def send_down(self, data):
+        datain = np.copy(data)
         """Send data from each node to the node below."""
         if self.rank > 0:
-            self.send(data, to_rank=self.rank-1, tag=10+self.rank)
-        else:
-            self.send(data, to_rank=self.size-1, tag=10+self.size)
-        self.wait()
+            self.send(datain, to_rank=self.rank-1, tag=10+self.rank)
         if self.rank < self.size-1:
-            data = self.recv(self.rank+1, tag=10+self.rank+1)
-        else:
-            data = self.recv(0, tag=10+self.size)
+            dataout = self.recv(self.rank+1, tag=10+self.rank+1)
         self.wait()
-        return data
+        if self.rank == 0:
+            self.send(datain, to_rank=self.size-1, tag=10+self.size)
+        if self.rank == self.size-1:
+            dataout = self.recv(0, tag=10+self.size)
+        self.wait()
+        return dataout
 
 
-    def collect(self, data):
+    def collect(self, data, outlist=False):
         """Collects a distributed data to the processor with rank=0.
 
         Parameters
@@ -188,7 +190,10 @@ class MPI:
             for i in range(1, self.size):
                 _data = self.recv(i, tag=10+i)
                 datas.append(_data)
-            data = np.concatenate(datas)
+            if outlist is False:
+                data = np.concatenate(datas)
+            else:
+                data = datas
         else:
             self.send(data, to_rank=0, tag=10+self.rank)
             data = None
