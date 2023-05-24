@@ -54,15 +54,25 @@ class MPI:
         self.loop_size = None
 
 
-    def split(self, length):
+    def split(self, length, size=None):
         """For splitting an array across nodes."""
-        split_equal = length/self.size
+        if size is None:
+            split_equal = length/self.size
+        else:
+            split_equal = length/size
         split_floor = np.floor(split_equal)
         split_remain = split_equal - split_floor
-        counts = split_floor*np.ones(self.size)
-        counts[:int(np.round(split_remain*self.size, decimals=0))] += 1
+        if size is None:
+            counts = split_floor*np.ones(self.size)
+            counts[:int(np.round(split_remain*self.size, decimals=0))] += 1
+        else:
+            counts = split_floor*np.ones(size)
+            counts[:int(np.round(split_remain*size, decimals=0))] += 1
         counts = counts.astype('int')
-        splits = np.zeros(self.size+1, dtype='int')
+        if size is None:
+            splits = np.zeros(self.size+1, dtype='int')
+        else:
+            splits = np.zeros(size+1, dtype='int')
         splits[1:] = np.cumsum(counts)
         split1 = splits[:-1]
         split2 = splits[1:]
@@ -106,6 +116,12 @@ class MPI:
         print(*value, flush=True)
 
 
+    def mpi_print_zero(self, *value):
+        """Prints only at node rank = 0."""
+        if self.rank == 0:
+            self.mpi_print(*value)
+
+
     def send(self, data, to_rank=None, tag=11):
         """Sends data from current core to other specified or all cores.
 
@@ -142,6 +158,16 @@ class MPI:
             Data received.
         """
         data = self.comm.recv(source=from_rank, tag=tag)
+        return data
+
+
+    def broadcast(self, data):
+        """Broadcast data from rank=0 to all nodes."""
+        if self.rank == 0:
+            self.send(data, tag=11)
+        else:
+            data = self.recv(0, tag=11)
+        self.wait()
         return data
 
 
@@ -183,8 +209,10 @@ class MPI:
         Parameters
         ----------
         data : array
-            distributed data set.
+            Distributed data set.
         """
+        if np.isscalar(data):
+            data = np.array([data])
         if self.rank == 0:
             datas = [data]
             for i in range(1, self.size):
@@ -197,6 +225,38 @@ class MPI:
         else:
             self.send(data, to_rank=0, tag=10+self.rank)
             data = None
+        self.wait()
+        return data
+
+
+    def collect_noNone(self, data):
+        _datas = self.collect(data, outlist=True)
+        if self.rank == 0:
+            datas = []
+            for i in range(0, len(_datas)):
+                if _datas[i] is not None:
+                    datas.append(_datas[i])
+            datas = np.concatenate(datas)
+        else:
+            datas = None
+        return datas
+
+
+    def distribute(self, data):
+        """Distribute and split data from rank 0.
+
+        Parameters
+        ----------
+        data : array
+            Full data set which will be split across the cores.
+        """
+        if self.rank == 0:
+            split1, split2 = self.split(len(data))
+            for i in range(1, len(split1)):
+                self.send(data[split1[i]:split2[i]], to_rank=i, tag=10+i)
+            data = data[split1[0]:split2[0]]
+        else:
+            data = self.recv(0, tag=10+self.rank)
         self.wait()
         return data
 
@@ -218,6 +278,42 @@ class MPI:
             data = None
         self.wait()
         return data
+
+
+    def mean(self, data):
+        total_data = self.sum(np.sum(data))
+        self.wait()
+        total_elem = self.sum(len(data.flatten()))
+        self.wait()
+        if self.rank == 0:
+            mean = total_data / total_elem
+            self.send(mean, tag=11)
+        else:
+            mean = self.recv(0, tag=11)
+        self.wait()
+        return mean
+
+
+    def min(self, data):
+        mins = self.collect(np.min(data))
+        if self.rank == 0:
+            minval = np.min(mins)
+            self.send(minval, tag=11)
+        else:
+            minval = self.recv(0, tag=11)
+        self.wait()
+        return minval
+
+
+    def max(self, data):
+        maxs = self.collect(np.max(data))
+        if self.rank == 0:
+            maxval = np.max(maxs)
+            self.send(maxval, tag=11)
+        else:
+            maxval = self.recv(0, tag=11)
+        self.wait()
+        return maxval
 
 
     def end(self):
