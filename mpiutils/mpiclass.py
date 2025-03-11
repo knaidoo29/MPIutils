@@ -1,14 +1,14 @@
 import numpy as np
-from mpi4py import MPI as mpi
 
 from . import loops
 
 
 class MPI:
 
-
     def __init__(self):
         """Initialises MPI."""
+        from mpi4py import MPI as mpi
+
         self.comm = mpi.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
