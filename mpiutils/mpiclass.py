@@ -8,7 +8,7 @@ class MPI:
     def __init__(self):
         """Initialises MPI."""
         from mpi4py import MPI as mpi
-
+        self.mpi = mpi
         self.comm = mpi.COMM_WORLD
         self.rank = self.comm.Get_rank()
         self.size = self.comm.Get_size()
@@ -16,21 +16,21 @@ class MPI:
         self.mpi_info = 'Proc ' + str(self.rank+1)+' of ' + str(self.size)
 
 
-    def mpi_fft_start(self, Ngrids):
-        """Returns mpi4py-fft FFT object."""
-        from mpi4py_fft import PFFT
-        if len(Ngrids) == 2:
-            FFT = PFFT(self.comm, Ngrids, axes=(0, 1), dtype=complex, grid=(-1,), transform='fftn')
-        elif len(Ngrids) == 3:
-            FFT = PFFT(self.comm, Ngrids, axes=(0, 1, 2), dtype=complex, grid=(-1,), transform='fftn')
-        return FFT
+    # def mpi_fft_start(self, Ngrids):
+    #     """Returns mpi4py-fft FFT object."""
+    #     from mpi4py_fft import PFFT
+    #     if len(Ngrids) == 2:
+    #         FFT = PFFT(self.comm, Ngrids, axes=(0, 1), dtype=complex, grid=(-1,), transform='fftn')
+    #     elif len(Ngrids) == 3:
+    #         FFT = PFFT(self.comm, Ngrids, axes=(0, 1, 2), dtype=complex, grid=(-1,), transform='fftn')
+    #     return FFT
 
 
-    def mpi_fft_array(self, FFT):
-        """Returns mpi4py-fft distributed array."""
-        from mpi4py_fft import newDistArray
-        f = newDistArray(FFT, False)
-        return f
+    # def mpi_fft_array(self, FFT):
+    #     """Returns mpi4py-fft distributed array."""
+    #     from mpi4py_fft import newDistArray
+    #     f = newDistArray(FFT, False)
+    #     return f
 
 
     def wait(self):
@@ -318,4 +318,4 @@ class MPI:
 
     def end(self):
         """Ends MPI environment."""
-        mpi.Finalize()
+        self.mpi.Finalize()
